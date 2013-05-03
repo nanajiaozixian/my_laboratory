@@ -3,6 +3,13 @@
 	var has3d,
 	vendor = '',
 
+	// Number of pages in the DOM, minimum value: 6
+
+	pagesInDOM = 6,
+
+	pagePosition = {0: {top: 0, left: 0, right: 'auto', bottom: 'auto'},
+					1: {top: 0, right: 0, left: 'auto', bottom: 'auto'}},
+
 	//display options
 	displays = ['single', 'double'],
 
@@ -64,6 +71,7 @@
 			data.opts = opts;
 			data.totalPages = opts.pages || 0; //store page total number
 			data.pageObjs = {}; // store pages
+			data.pageWrap = {}; //store page wrapper
 
 			if(opts.when)
 			{
@@ -76,9 +84,10 @@
 				}
 			}
 
+			this.css({position: 'relative'});
 			this.turn('display', opts.display);//set display mode
 
-			len = ch.length
+			len = ch.length;
 			for(i = 0; i<len; i++)
 			{
 				this.turn('addPage', ch[i], i+1);
@@ -122,6 +131,8 @@
 
 				turnMethods._addPage.call(this, page);// Add page
 			}
+
+			return this;
 			
 		}, // addPage end
 
@@ -129,12 +140,32 @@
 		_addPage: function(page){
 
 			var data = this.data(),
-				element = data.PageObjs[page];
+				element = data.pageObjs[page];
 
 			if(element){
 				if(turnMethods._necessPage.call(this, page)){
+
+					var pageWidth = (data.display=='double')?  this.width()/2 : this.width(),
+						pageHeight = this.height();
+
+					element.css({width:pageWidth, height:pageHeight});
+
+					//wrapper
+					data.pageWrap[page] = $('<div/>', {'class': 'turn-page-wrapper',
+											page: page,
+											css: {position: 'absolute',
+											overflow: 'hidden',
+											width: pageWidth,
+											height: pageHeight}}).
+											css(pagePosition[(data.display=='double') ? page%2 : 0]);
+
+					this.append(data.pageWrap[page]);
+
+					data.pageWrap[page].prepend(data.pageObjs[page]);
 				}
 			}
+
+
 
 		}, //_addPage end
 
@@ -154,25 +185,16 @@
 		
 		//return the book page range.
 		range: function(page){
+
 			var data = this.data();
 			
-			var view = turnMethods._view.call(this, page);
-
-			if(page<1 || page>data.totalPages){
-				throw new Error ('"'+page+'" is not a page for range');
-			}
-
-			view[1] = view[1] || view[0];
-
-			if(view[0]>=1 && view[1]<=data.totalPages){
-				
-			}
+			return [1, data.totalPages];
 
 
-		}
+		},//range end
 
 
-		// return the page numbers of one paper
+		// return the page numbers of the view, 1, 2-3, 4-5, 6
 
 		_view: function(page){
 
@@ -185,7 +207,7 @@
 				return [page];
 			}
 
-		}
+		},
 
 
 		//sets or gets the display mode
@@ -197,8 +219,10 @@
 
 			if(display){
 
-				if($.isArray(display, displays) == -1)// whether display is belong to displays.
+				// whether display is belong to displays.
+				if($.isArray(display, displays) == -1){
 					throw new Error ('""' + display + '" is not a value for display.');
+				}
 
 			data.display = display;
 
@@ -206,22 +230,26 @@
 
 			return this;
 
-		},//init display
+		}// display end
 
 
 	},// turnMethods end
 
 
 	cla = function(that, methods, args){
-		if(!args[0] || typeof(args[0])=="object")//if args is an object
+		//if args is an object
+		if(!args[0] || typeof(args[0])=="object"){
 			return methods.init.apply(that, args);
+		}
 		else if(methods[args[0]] && args[0].toString().substr(0, 1)!="_")//if args is a method
+		{
 			return methods[args[0]].apply(that, Array.prototype.slice.call(args,1));// just transfer the elements from args[1].
+		}
 	};
 	$.extend($.fn, {
 		turn: function(req){
 			return cla(this, turnMethods, arguments);
-		},
+		}
 	});
 	
 })(jQuery);
