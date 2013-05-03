@@ -69,7 +69,7 @@
 
 			opts = $.extend({width: this.width(), height: this.height()}, turnOptions, opts);
 			data.opts = opts;
-			data.totalPages = opts.pages || 0; //store page total number
+			data.totalPages = 0; //store page total number
 			data.pageObjs = {}; // store pages
 			data.pageWrap = {}; //store page wrapper
 
@@ -79,7 +79,7 @@
 				{
 					if(has(i, opts.when))
 					{
-						this.bind(i, opts.when[i]);
+						this.bind(i, opts.when[i]);//bind events provided by index
 					}
 				}
 			}
@@ -92,6 +92,8 @@
 			{
 				this.turn('addPage', ch[i], i+1);
 			}
+
+			this.turn('page', opts.page);
 
 		}, //init end
 
@@ -210,6 +212,15 @@
 		},
 
 
+		// Gets a view
+		view: function(page){
+			var data = this.data(), view = turnMethods._view.call(this, page);
+			
+			return (data.display=='double') ? [(view[0]>0) ? view[0] : 0, (view[1]<=data.totalPages) ? view[1] : 0] : [(view[0]>0 && view[0]<= data.totalPages) ? view[0] : 0];
+
+		},//view end
+
+
 		//sets or gets the display mode
 
 		//!!!!!!!!!!not end
@@ -230,8 +241,29 @@
 
 			return this;
 
-		}// display end
+		},// display end
 
+		// Gets and sets a page
+		page: function(page){
+
+			var data = this.data();
+
+			if(page>0 && page<=data.totalPages) {
+				if(!data.done || $.inArray(page, this.turn('view'))!=-1) // if pages are not ready or this page is in current view
+				{
+					turnMethods._fitPage.call(this, page);
+				}else{
+					//&&&&&&&&&&&&&&&&&&&
+				}
+			}
+		},//page end
+
+
+		_fitPage: function(page, ok){
+
+			var data = this.data(), newView = this.turn('view', page);
+			this.trigger('turned', [page, newView]);
+		}
 
 	},// turnMethods end
 
