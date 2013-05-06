@@ -58,6 +58,8 @@
 
 	},
 
+
+	/*********turnMethods***********/
 	turnMethods = {
 		init: function(opts){
 			if(has3d === undefined){
@@ -72,6 +74,8 @@
 			data.totalPages = 0; //store page total number
 			data.pageObjs = {}; // store pages
 			data.pageWrap = {}; //store page wrapper
+			data.pagePlace = {};//store current view pages places
+			data.pages = {}; //store flip pages
 
 			if(opts.when)
 			{
@@ -87,13 +91,19 @@
 			this.css({position: 'relative'});
 			this.turn('display', opts.display);//set display mode
 
+			if(opts.page)
+			{
+				data.page = opts.page;
+			}
+
 			len = ch.length;
 			for(i = 0; i<len; i++)
 			{
 				this.turn('addPage', ch[i], i+1);
 			}
 
-			this.turn('page', opts.page);
+			//this.turn('page', opts.page);
+
 
 		}, //init end
 
@@ -152,6 +162,9 @@
 
 					element.css({width:pageWidth, height:pageHeight});
 
+					// Place pages
+					data.pagePlace[page] = page;
+
 					//wrapper
 					data.pageWrap[page] = $('<div/>', {'class': 'turn-page-wrapper',
 											page: page,
@@ -169,7 +182,9 @@
 				//If the page is in the current view, create the flip effect
 				if(!page || turnMethods._setPageLoc.call(this, page)==1) //_setPageLoc set the page's z-index
 				{
-					//&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+					turnMethods._makeFlip.call(this, page);// set flip effect for current page.
+				}else{
+					data.pagePlace[page] = 0; //if the page isn't in the current view, data.pagePlace[page] needs to be set 0
 				}
 			}
 
@@ -184,10 +199,10 @@
 
 
 			if(page==view[0] || page==view[1]) {
-				data.pageWrap[page].css({'z-index': data.totalPages, display: ''});
+				data.pageWrap[page].css({'z-index': pagesInDOM, display: ''});
 				return 1;
 			}else if((data.display=='single' && page==view[0]+1) || (data.display=='double' && page==view[0]-2 || page==view[1]+2)){
-				data.pageWrap[page].css({'z-index': data.totalPages-1, display: ''});
+				data.pageWrap[page].css({'z-index': pagesInDOM-1, display: ''});
 				return 2;
 			}else {
 				data.pageWrap[page].css({'z-index': 0, display: 'none'});
@@ -277,7 +292,7 @@
 			if(page>0 && page<=data.totalPages) {
 				if(!data.done || $.inArray(page, this.turn('view'))!=-1) // if pages are not ready or this page is in current view
 				{
-					turnMethods._fitPage.call(this, page);
+					//turnMethods._fitPage.call(this, page);
 				}else{
 					//&&&&&&&&&&&&&&&&&&&
 				}
@@ -318,9 +333,49 @@
 
 			this.turn('update');
 
-		} // stop end
+		}, // stop end
+
+
+		// Prepares the flip effect for a page
+
+		_makeFlip: function(page) {
+
+			var data = this.data();
+
+			if(!data.pages[page] && data.pagePlace[page]==page) {
+				var single = data.display=='single';
+				even = page%2;
+
+				data.pages[page] = data.pageObjs[page];
+				
+				var tempPage = data.pages[page];
+				tempPage.css({width: (single) ? this.width(): this.width()/2, height: this.height()});
+				tempPage.flip({page: page,
+							next: (single && page === data.totalPages)? page-1 : ((even || single) ? page+1 :page-1),
+							turn: this,
+							corner: (single)?'all':(even?'forword':'backword')});
+
+			}
+		}
 
 	},// turnMethods end
+
+
+	/*****************flipMethods******************/
+
+	// Methods and properties for the flip page effect
+
+	flipMethods = {
+		
+		init: function(opts) {
+			
+			this.data({f: {}});
+			this.flip('options', opts);
+			//&&&&&&&&&&&&&&&&&&&&&&&20130506
+
+
+		}
+	}, //end flipMethods
 
 
 	cla = function(that, methods, args){
@@ -336,7 +391,11 @@
 	$.extend($.fn, {
 		turn: function(req){
 			return cla(this, turnMethods, arguments);
-		}
+		},//end turn
+
+		flip: function(req, opts){
+			return cla(this, flipMethods, arguments);
+		} //end flip
 	});
 	
 })(jQuery);
