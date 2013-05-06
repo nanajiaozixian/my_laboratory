@@ -165,11 +165,36 @@
 
 					data.pageWrap[page].prepend(data.pageObjs[page]);
 				}
+
+				//If the page is in the current view, create the flip effect
+				if(!page || turnMethods._setPageLoc.call(this, page)==1) //_setPageLoc set the page's z-index
+				{
+					//&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+				}
 			}
 
 
 
 		}, //_addPage end
+
+		_setPageLoc: function(page){
+
+			var data = this.data(),
+				view = this.turn('view');
+
+
+			if(page==view[0] || page==view[1]) {
+				data.pageWrap[page].css({'z-index': data.totalPages, display: ''});
+				return 1;
+			}else if((data.display=='single' && page==view[0]+1) || (data.display=='double' && page==view[0]-2 || page==view[1]+2)){
+				data.pageWrap[page].css({'z-index': data.totalPages-1, display: ''});
+				return 2;
+			}else {
+				data.pageWrap[page].css({'z-index': 0, display: 'none'});
+				return 0;
+			}
+				
+		},
 
 
 		// Detects if a page is within the range of `pagesInDOM` from the current view
@@ -201,6 +226,7 @@
 		_view: function(page){
 
 			var data = this.data();
+			page = page || data.page; // if the page is not given, then we can use data.page
 
 			if(data.display == "double"){
 				return (page%2 ? [page-1, page] : [page, page+1]); //whether the page is the odd or even number page of the pager
@@ -255,6 +281,7 @@
 				}else{
 					//&&&&&&&&&&&&&&&&&&&
 				}
+				return this;
 			}
 		},//page end
 
@@ -262,8 +289,36 @@
 		_fitPage: function(page, ok){
 
 			var data = this.data(), newView = this.turn('view', page);
-			this.trigger('turned', [page, newView]);
-		}
+			//this.trigger('turned', [page, newView]);
+
+			if(!data.pageObjs[page]){
+				return;
+			}
+
+			//data.tpage is a temporary parameter for data.page
+			data.tpage = page;
+
+			this.turn('stop', ok);
+
+		},//_fitPage end
+
+
+		// Stops animations
+
+		stop: function(ok) {
+
+			var data = this.data();
+
+			if(data.tpage) {
+
+				//init data.page
+				data.page = data.tpage;
+				delete data['tpage'];
+			}
+
+			this.turn('update');
+
+		} // stop end
 
 	},// turnMethods end
 
