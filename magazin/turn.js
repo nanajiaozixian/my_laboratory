@@ -3,6 +3,20 @@
 	var has3d,
 	vendor = '',
 
+	// Gets basic attributes for a layer
+
+	divAtt = function(top, left, zIndex, overf) {
+		return {'css': {
+					position: 'absolute',
+					top: top,
+					left: left,
+					'overflow': overf || 'hidden',
+					'z-index': zIndex || 'auto'
+					}
+			};
+	},//end divAtt
+
+
 	// Number of pages in the DOM, minimum value: 6
 
 	pagesInDOM = 6,
@@ -33,7 +47,27 @@
 		// Events
 
 		when: null
+	}, // end turnOptions
+
+
+	flipOptions = {
+
+		//back page
+
+		folding: null,
+
+		// Corners
+		// backward: Activates both tl and bl corners
+		// forward: Activates both tr and br corners
+		// all: Activates all the corners
+
+		corners: 'forward',
+
+		// Size of the active zone of each corner
+
+		cornerSize: 100
 	},
+
 	// Checks if a property belongs to an object
 
 	has = function(property, object){
@@ -369,12 +403,116 @@
 		
 		init: function(opts) {
 			
-			this.data({f: {}});
+			this.data({f: {}}); //init data.f
 			this.flip('options', opts);
-			//&&&&&&&&&&&&&&&&&&&&&&&20130506
+			
+			flipMethods._addPageWrapper.call(this);
+
+			return this;
+
+		}, // end init
 
 
+		//store options to data.f
+
+		options: function(opts){
+
+			var data = this.data().f;
+
+			if(opts) {
+
+				flipMethods.setData.call(this, {opts: $.extend({}, data.opts || flipOptions, opts)});
+
+				return this;
+
+			} else{
+				return data.opts;
+			}
+		}, //end option
+
+
+
+
+		// set options to data.f
+		setData: function(d) {
+
+			var data = this.data();
+
+			data.f = $.extend(data.f, d);
+
+			return this;
+		}, //end setData
+
+
+		// Prepares the page by adding a general wrapper and another objects
+
+		_addPageWrapper: function() {
+
+			var data = this.data().f,
+				parent = this.parent();
+
+			if(!data.wrapper) {
+
+				var left = this.css('left'),
+					top  = this.css('top'),
+					width = this.width(),
+					height = this.height();
+
+				data.parent = parent;
+				data.fparent = (data.opts.turn) ? data.opts.turn.data().fparent : $('#turn-fwrappers');
+
+
+
+				//create fparent to contain the flip effect div 
+
+				if(!data.fparent) {
+					var fparent = $('<div/>', {css: {'pointer-events': 'none' //prevent accept mouse event
+					}}).hide();
+
+					if(data.opts.turn) {
+
+						var tcss = divAtt(-data.opts.turn.offset().top, -data.opts.turn.offset().left, 'auto', 'visible').css; //set fparent css
+						fparent.css(tcss).appendTo(data.opts.turn);// put fparent under main div
+
+						data.opts.turn.data().fparent = fparent; 
+					}else {
+						//&&&&&&&&&&&&&&&&
+					}
+
+					data.fparent = fparent;
+				}
+
+				this.css({position: 'absolute', top: 0, left: 0, bottom: 'auto', right: 'auto'});
+
+
+				// create wrapper div contain turn-page
+				data.wrapper = $('<div/>', divAtt(0, 0, this.css('z-index'))).addClass('wrapper').appendTo(parent).prepend(this);
+
+
+				//create fwrapper
+				data.fwrapper = $('<div/>', divAtt(parent.offset().top, parent.offset().left)).addClass("fwrapper").hide().appendTo(data.fparent);
+
+				//create a div to contain back page
+				data.fpage = $('<div/>', {css: {cursor: 'default'}}).addClass("fpage").appendTo($('<div/>', divAtt(0, 0, 0, 'visible')).appendTo(data.fwrapper));
+
+				data.ashadow = $('<div/>', divAtt(0, 0, 1)).appendTo(data.fpage);
+
+
+				// Save data
+
+				flipMethods.setData.call(this, data);
+
+				// Set size
+				flipMethods.resize.call(this, true);
+			}
+		}, // end _addPageWrapper
+
+		
+		// Resize each page
+		resize: function() {
 		}
+
+
 	}, //end flipMethods
 
 
