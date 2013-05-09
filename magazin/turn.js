@@ -125,6 +125,8 @@
 			this.css({position: 'relative'});
 			this.turn('display', opts.display);//set display mode
 
+			//Add pages
+
 			if(opts.page)
 			{
 				data.page = opts.page;
@@ -136,7 +138,18 @@
 				this.turn('addPage', ch[i], i+1);
 			}
 
-			//this.turn('page', opts.page);
+
+			//set corner flip effect
+
+			$(this).bind(events.start, function(e){
+				for(var page in data.pages)
+				{
+					if (has(page, data.pages) && flipMethods._eventStart.call(data.pages[page])===false)
+					{
+						return false;
+					}
+				}
+			}) ;
 
 
 		}, //init end
@@ -510,7 +523,37 @@
 		
 		// Resize each page
 		resize: function() {
-		}
+
+			//var data = this.data();
+
+
+			
+			//if(data.pages[0]) {  
+
+				////resize flip pages
+				//data.pageWrap[0].css({left: -this.width()});
+				//data.pages[0].flip('resize', true);
+			//}
+		}, //end resize
+
+
+		resize: function(full) {
+
+			var data = this.data().f,
+				width = this.width(),
+				height = this.height(),
+				size = Math.round(Math.sqrt(Math.pow(width,  2)+Math.pow(height, 2))); // wrapper's width must can contain a page's widthest side
+
+			if(full) {
+				data.wrapper.css({width: size, height: size});
+				data.fwrapper.css({width: size, height: size}).children(':first-child').css({width: width, height: height});
+
+				data.fpage.css({width: height, height: width});
+
+				data.ashadow.css({width: height, height: width});
+
+			}
+		},//end resize
 
 
 	}, //end flipMethods
