@@ -17,6 +17,11 @@
 	},//end divAtt
 
 
+	// Gets a 2D point
+
+	point2D = function(x, y) {
+		return {x: x, y: y};
+	},
 
 	// Number of pages in the DOM, minimum value: 6
 
@@ -165,7 +170,7 @@
 						flipMethods._eventMove.call(data.pages[page], e);
 					}
 				}
-			})
+			});
 
 
 		}, //init end
@@ -442,7 +447,7 @@
 			}
 
 			turnMethods._addMotionPage.call(this);
-		}, // end _start
+		} // end _start
 
 	},// turnMethods end
 
@@ -561,7 +566,7 @@
 
 		
 		// Resize each page
-		resize: function() {
+		//resize: function() {
 
 			//var data = this.data();
 
@@ -573,7 +578,7 @@
 				//data.pageWrap[0].css({left: -this.width()});
 				//data.pages[0].flip('resize', true);
 			//}
-		}, //end resize
+		//}, //end resize
 
 
 		resize: function(full) {
@@ -597,7 +602,7 @@
 		
 		// mousemove event
 
-		_eventMove: function() {
+		_eventMove: function(e) {
 
 			var data = this.data().f;
 
@@ -610,8 +615,17 @@
 
 				flipMethods._showFoldedPage.call(this, data.corner);
 			}
-			else{
-				//&&&&&&&&&&&&&&&&&&&&&&
+			else if(!this.data().effect){
+
+				var corner = flipMethods._cornerActivated.call(this, e[0]);
+
+				if(corner){
+					var origin = flipmethod._c.call(this, corner.corner, data.opts.cornerSize/2);
+					corner.x = origin.x;
+					corner.y = origin.y;
+
+					flipMethods._showFoldedPage.call(this, corner, true);
+				}
 			}
 
 
@@ -634,6 +648,17 @@
 					return false;
 				}
 			}
+
+			if(folding) {
+				if(animate) {
+
+					var that = this, 
+						point = flipMethods._c.call(this, c.corner, 1);//set the flip corner start point
+
+					this.animatef({from: [point.x, point.y], to: [c.x, c.y], duration: 500, frame: function(v){
+					}});// animate start point to the end point
+				}
+			}
 		}, //end _showFoldedPage
 
 		//return folding page
@@ -652,7 +677,61 @@
 				}
 			}
 
-		}
+		},//end _foldingPage
+
+
+		// count the mouse belong to which corner "tr, tl, bl, br"
+		_cornerActivated: function(e) {
+
+			if(e.originalEvent === undefined){
+				return false;
+			}
+
+			var data = this.data().f,
+				pos = data.parent.offset(),
+				width = this.width(),
+				height = this.height(),
+				c = {x: Math.max(0, e[0].pageX-pos.left), y: Math.max(0, e[0].pageY-pos.top)},
+				csz = data.opts.cornerSize,
+				allowedCorners = flipMethods._cAllowed.call(this);
+
+			if(c.x<=0 || c.y<=0 || c.x>=width || c.y>=height){
+				return false;
+			}
+
+			if(c.y<csz){ 
+				c.corner = 't';
+			}else if(c.y>=height-csz){
+				c.corner = 'b';
+			}else{
+				return false;
+			}
+
+			if(c.x<=csz){
+				c.corner += 'l';
+			}else if(c.x>=width-csz){
+				c.corner += 'r';
+			}else{
+				return false;
+			}
+
+			return ($.inArray(c.corner, allowedCorners) == -1) ? false : c;
+			
+
+		}, //end _cornerActivated
+
+		_cAllowed: function() {
+			return corners[this.data().f.opts.corners] || this.data().f.opts.corners;
+		},// end _cAllowed
+
+
+		// return the corner center point
+
+		_c: function(corner, opts) {
+
+			opts = opts || 0;
+			return({tl: point2D(opts, opts), tr: opt2D(this.width()-opts, opts), bl: point2D(opts, this.height()-opts), br: point2D(this.width()-opts, this.height()-opts)})[corner];
+		}// end _c
 
 	}, //end flipMethods
 
@@ -674,7 +753,36 @@
 
 		flip: function(req, opts){
 			return cla(this, flipMethods, arguments);
-		} //end flip
+		}, //end flip
+
+		animatef: function(point){
+
+			var data = this.data();
+
+			if(data.effect){
+				clearInterval(data.effect.handle);
+			}
+
+			if(point) {
+				if(!point.to.lenght){
+					point.to = [point.to];
+				}
+
+				if(!point.from.length) {
+					point.from = [point.from];
+				}
+
+				f = function() {
+
+					var j, v = [];
+					
+					for(j=0; j<len; j++)
+					{
+						v.push(point.easing(1, time, point.from[j], diff[j], point.duration));
+					}
+				}
+			}
+		}
 	});
 	
 })(jQuery);
