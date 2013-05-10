@@ -17,6 +17,7 @@
 	},//end divAtt
 
 
+
 	// Number of pages in the DOM, minimum value: 6
 
 	pagesInDOM = 6,
@@ -26,6 +27,9 @@
 
 	//display options
 	displays = ['single', 'double'],
+
+	//events
+	events = {start: 'mousedown', move: 'mousemove', end: 'mouseup'},
 
 	// Default options
 
@@ -141,15 +145,27 @@
 
 			//set corner flip effect
 
-			$(this).bind(events.start, function(e){
+			//$(this).bind(events.start, function(e){
+				//for(var page in data.pages)
+				//{
+					//if (has(page, data.pages) && flipMethods._eventStart.call(data.pages[page])===false)
+					//{
+						//return false;
+					//}
+				//}
+			//}) ;
+
+
+
+			$(this).bind(events.move, function(e) {
+
 				for(var page in data.pages)
 				{
-					if (has(page, data.pages) && flipMethods._eventStart.call(data.pages[page])===false)
-					{
-						return false;
+					if(has(page, data.pages)){
+						flipMethods._eventMove.call(data.pages[page], e);
 					}
 				}
-			}) ;
+			})
 
 
 		}, //init end
@@ -402,8 +418,31 @@
 							turn: this,
 							corner: (single)?'all':(even?'forword':'backword')});
 
+				//bind events to tempPage
+				tempPage.bind('start', turnMethods._start);
+
 			}
-		}
+		}, //end _makeFlip
+
+
+
+		//'start' event action
+		_start: function(e, opts, corner) {
+
+			var data = opts.turn.data(),
+				event = $.Event('start');
+
+			e.stopPropagation();
+
+			opts.turn.trigger(event, [opts, corner]);
+
+			if (event.isDefaultPrevented()) {
+				e.preventDefault();
+				return;
+			}
+
+			turnMethods._addMotionPage.call(this);
+		}, // end _start
 
 	},// turnMethods end
 
@@ -555,6 +594,65 @@
 			}
 		},//end resize
 
+		
+		// mousemove event
+
+		_eventMove: function() {
+
+			var data = this.data().f;
+
+			if(data.corner) {
+
+				var pos = data.parent.offset();
+
+				data.corner.x = e[0].pageX-pos.left;
+				data.coener.y = e[0].pageY-pos.top;
+
+				flipMethods._showFoldedPage.call(this, data.corner);
+			}
+			else{
+				//&&&&&&&&&&&&&&&&&&&&&&
+			}
+
+
+		}, //end _eventMove
+
+
+		//show folded page 
+		_showFoldedPage: function(c, animate) {
+
+			var folding = flipMethods._foldingPage.call(this),
+
+			dd = this.data(),
+			data = dd.f;
+
+			if(!data.point || data.point.corner != c.corner) {
+				var event = $.Event('start');
+				this.trigger(event, [data.opts, c.corner]);
+
+				if(event.isDefaultPrevented()){
+					return false;
+				}
+			}
+		}, //end _showFoldedPage
+
+		//return folding page
+		_foldingPage: function(corner) {
+
+			var opts = this.data().f.opts;
+
+			if(opts.folding){
+				return opts.folding;
+			}else if(opts.turn){
+				var data = opts.turn.data();
+				if(data.display == 'single'){
+					return (data.pageObjs[opts.next])?data.pageObjs[0]:null;
+				}else{
+					return data.pageObjs[opts.next];
+				}
+			}
+
+		}
 
 	}, //end flipMethods
 
