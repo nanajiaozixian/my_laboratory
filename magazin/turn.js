@@ -30,6 +30,14 @@
 	pagePosition = {0: {top: 0, left: 0, right: 'auto', bottom: 'auto'},
 					1: {top: 0, right: 0, left: 'auto', bottom: 'auto'}},
 
+
+	//corners
+	corners = {
+		backward: ['bl', 'tl'],
+		forward: ['br', 'tr'],
+		all: ['tl', 'bl', 'tr', 'br']
+	},
+
 	//display options
 	displays = ['single', 'double'],
 
@@ -421,7 +429,7 @@
 				tempPage.flip({page: page,
 							next: (single && page === data.totalPages)? page-1 : ((even || single) ? page+1 :page-1),
 							turn: this,
-							corner: (single)?'all':(even?'forword':'backword')});
+							corners: (single)?'all':(even?'forward':'backword')});
 
 				//bind events to tempPage
 				tempPage.bind('start', turnMethods._start);
@@ -439,7 +447,7 @@
 
 			e.stopPropagation();
 
-			opts.turn.trigger(event, [opts, corner]);
+			//opts.turn.trigger(event, [opts, corner]);
 
 			if (event.isDefaultPrevented()) {
 				e.preventDefault();
@@ -447,7 +455,11 @@
 			}
 
 			turnMethods._addMotionPage.call(this);
-		} // end _start
+		}, // end _start
+
+		_addMotionPage: function(){
+			//&&&&&&&&&&&&&20120513
+		}
 
 	},// turnMethods end
 
@@ -606,6 +618,8 @@
 
 			var data = this.data().f;
 
+			e = [e];
+
 			if(data.corner) {
 
 				var pos = data.parent.offset();
@@ -620,7 +634,7 @@
 				var corner = flipMethods._cornerActivated.call(this, e[0]);
 
 				if(corner){
-					var origin = flipmethod._c.call(this, corner.corner, data.opts.cornerSize/2);
+					var origin = flipMethods._c.call(this, corner.corner, data.opts.cornerSize/2);
 					corner.x = origin.x;
 					corner.y = origin.y;
 
@@ -687,6 +701,8 @@
 				return false;
 			}
 
+			e = [e];
+
 			var data = this.data().f,
 				pos = data.parent.offset(),
 				width = this.width(),
@@ -721,6 +737,10 @@
 		}, //end _cornerActivated
 
 		_cAllowed: function() {
+
+			var test1,test2;
+			test1 = this.data().f;
+			test2 = this.data().f;
 			return corners[this.data().f.opts.corners] || this.data().f.opts.corners;
 		},// end _cAllowed
 
@@ -730,7 +750,7 @@
 		_c: function(corner, opts) {
 
 			opts = opts || 0;
-			return({tl: point2D(opts, opts), tr: opt2D(this.width()-opts, opts), bl: point2D(opts, this.height()-opts), br: point2D(this.width()-opts, this.height()-opts)})[corner];
+			return({tl: point2D(opts, opts), tr: point2D(this.width()-opts, opts), bl: point2D(opts, this.height()-opts), br: point2D(this.width()-opts, this.height()-opts)})[corner];
 		}// end _c
 
 	}, //end flipMethods
@@ -772,15 +792,55 @@
 					point.from = [point.from];
 				}
 
+
+				//gradually from point to to point fomular
+				if (!point.easing) {point.easing = function (x, t, b, c, data) { return c * Math.sqrt(1 - (t=t/data-1)*t) + b; };
+				}
+
+
+				var diff = [], //store the gap from [frompoint] to [topoint]
+				len = point.to.lenght,
+				fps = point.fps || 30, // fps stores the frequency of time
+
+				time = - fps;//time start from 0
+				
+
 				f = function() {
 
 					var j, v = [];
+					time = Math.min(point.duration, time + fps);//set time
 					
 					for(j=0; j<len; j++)
 					{
 						v.push(point.easing(1, time, point.from[j], diff[j], point.duration));
 					}
+
+					point.fram((len==1) ? v[0] : v);
+
+					//when time is up 
+					if(time==point.duration) {
+						clearInterval(data.effect.handle);
+						delete data['effect'];
+						that.data(data);
+						if(point.complete){
+							//point.complete();
+						}
+					}
+				};// end f()
+
+
+				// store the gap between [frompoint] with [topoint]
+				for (j = 0; j<len ; j++)
+				{
+					diff.push(point.to[j] - point.from[j]);
 				}
+
+				data.effect = point;
+				data.effect.handle = setInterval(f, fps);
+				this.data(data);
+				f();
+			}else {
+				delete data['effect'];
 			}
 		}
 	});
