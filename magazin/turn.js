@@ -457,9 +457,79 @@
 			turnMethods._addMotionPage.call(this);
 		}, // end _start
 
+
+		// add the current motion pages
 		_addMotionPage: function(){
-			//&&&&&&&&&&&&&20120513
-		}
+			var opts = $(this).data().f.opts,
+				turn = opts.turn;
+				dd = turn.data();
+
+			opts.pageMv = opts.page;
+			turnMethods._addMv.call(turn, opts.pageMv);
+			turn.turn('update');
+
+		},// end _addMotionPage
+
+
+		_addMv: function(page) {
+
+			var data = this.data();
+
+			turnMethods._removeMv.call(this, page);
+			data.pageMv.push(page);
+		},
+
+		_removeMv: function() {
+
+
+		}, //end _removeMv
+
+		update: function(){
+			var page,
+				data = this.data();
+
+			if(data.pageMv.length && data.pageMv[0]!==0){
+
+				var apage,
+					pos = this.turn('calculateZ', data.pageMv),
+					view = this.turn('view', data.tpage);
+			}
+		},//end update
+
+
+		// Calculate the z-index value for pages during the animation
+
+		calculateZ: function(mv){
+
+			var i, data = this.data(),
+				view = this.turn('view'),
+				currentpage = view[0] || view[1],
+				r = {pageZ: {}, partZ: {}, pageV: {}};//pageV stores current view pages to "true"
+
+			addView = function(page) {
+				var view = that.turn('view', page);
+				if(view[0]) {
+					r.pageV[view[0]] = true;
+				}
+				if(view[1]) {
+					r.pageV[view[1]] = true;
+				}
+			};
+
+			for (i=0; i<mv.length; i++)
+			{
+				page = mv[i];
+				nextPage = data.pages[page].data().f.opts.next;
+				placePage = data.pagePlace[page];
+				addView(page);
+				addView(nextPage);
+				dpage = (data.pagePlace[nextPage]==nextPage)?nextPage:page;
+				r.pageZ[dpage] = data.totalPages - Math.abs(currentPage-dpage);
+				r.partZ[placePage] = data.totalPages*2 + Math.abs(currentPage-dpage);
+			}
+
+			return r;
+		}//end calculateZ
 
 	},// turnMethods end
 
