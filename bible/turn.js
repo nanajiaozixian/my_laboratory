@@ -23,6 +23,14 @@
 
 var has3d,
 
+	g_bookWidth = 0,
+
+	g_bookHeight = 0,
+
+	g_pageWidth = 0,
+
+	g_pageHeight = 0,
+
 	vendor ='',
 
 	PI = Math.PI,
@@ -242,7 +250,10 @@ turnMethods = {
 		}
 
 		var i, data = this.data(), ch = this.children();
-	
+
+		g_bookWidth = this.width();
+		g_bookHeight = this.height();
+		
 		opts = $.extend({width: this.width(), height: this.height()}, turnOptions, opts);
 		data.opts = opts;
 		data.pageObjs = {};
@@ -362,7 +373,19 @@ turnMethods = {
 					var pageWidth = (data.display=='double') ? this.width()/2 : this.width(),
 						pageHeight = this.height();
 
-					element.css({width:pageWidth, height:pageHeight});
+					//edit by Doris :add page cover
+
+					if(page == 1 || page == 2) {
+						g_bookWidth = pageWidth;
+						g_pageHeight = pageHeight;
+						element.css({width:g_bookWidth, height:g_pageHeight});
+					}else{
+						g_pageWidth = pageWidth - 10;
+						g_pageHeight = pageHeight - 20;
+						pageWidth = g_pageWidth;
+						pageHeight = g_pageHeight;
+						element.css({width:g_pageWidth, height:g_pageHeight});
+					}
 
 					// Place
 					data.pagePlace[page] = page;
